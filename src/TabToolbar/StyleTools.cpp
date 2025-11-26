@@ -25,9 +25,7 @@
 #include <QSysInfo>
 #include <QtGlobal>
 #include <QWidget>
-#if (QT_VERSION <= QT_VERSION_CHECK(5, 10, 0))
-#include <QDesktopWidget>
-#endif
+#include <QWindow>
 #include <stdexcept>
 #include <cstddef>
 #include <TabToolbar/StyleTools.h>
@@ -44,7 +42,8 @@ static QString GetStyleTemplate()
         return styleTemplate;
 
     QFile f(":/tt/StyleTemplate.qss");
-    f.open(QFile::ReadOnly);
+    bool result = f.open(QFile::ReadOnly);
+    assert(result);
     styleTemplate = f.readAll();
     return styleTemplate;
 }
@@ -85,7 +84,7 @@ static void FillStyle(QString& style, const StyleParams& params)
         const QMetaProperty prop = params.metaObject()->property(i);
         if(QString(prop.name()) == "objectName")
             continue;
-        if(prop.type() == QVariant::Bool)
+        if(prop.metaType().id() == QMetaType::Bool)
             continue;
         const QString propStr = QString("%") + prop.name() + "%";
         if(!style.contains(propStr))
@@ -93,22 +92,25 @@ static void FillStyle(QString& style, const StyleParams& params)
         style.replace(propStr, "%1");
 
         const QVariant property = params.property(prop.name());
-        switch(prop.type())
+        
+        int colorsTypeId = qMetaTypeId<Colors>();
+        if(prop.metaType().id() == colorsTypeId)
         {
-            case QVariant::String:
+            const Colors& colors = property.value<Colors>();
+            if(colors.size() == 0)
+                throw std::runtime_error("Some property has no colors!");
+            style = style.arg(FormatColor(colors));
+
+            return;
+        }
+        switch(prop.metaType().id())
+        {
+            case QMetaType::QString:
                 style = style.arg(property.toString() + "px");
                 break;
-            case QVariant::Int:
+            case QMetaType::Int:
                 style = style.arg(property.toInt());
                 break;
-            case QVariant::UserType:
-            {
-                const Colors& colors = property.value<Colors>();
-                if(colors.size() == 0)
-                    throw std::runtime_error("Some property has no colors!");
-                style = style.arg(FormatColor(colors));
-                break;
-            }
             default:
                 throw std::runtime_error("Unknown property type in style!");
         }
@@ -180,13 +182,9 @@ QString GetDefaultStyle()
 
 float GetScaleFactor(const QWidget& widget)
 {
-#if (QT_VERSION <= QT_VERSION_CHECK(5, 10, 0))
-    auto scrNumber = QApplication::desktop()->screenNumber(widget.mapToGlobal(QPoint(0,0)));
-    auto screens = QGuiApplication::screens();
-    QScreen* scr = screens.at(scrNumber);
-#else
-    QScreen* scr = QGuiApplication::screenAt(widget.mapToGlobal(QPoint(0,0)));
-#endif
+    QScreen* scr = widget.screen(); 
+    assert(scr);
+
     const float defaultDpi = 96.0f;
     return scr->logicalDotsPerInchY() / defaultDpi;
 }

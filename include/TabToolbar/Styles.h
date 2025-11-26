@@ -55,6 +55,12 @@ public:
     {
         return m_colors != c.m_colors;
     }
+
+    bool operator == (const Colors& c) const
+    {
+        return m_colors == c.m_colors;
+    }
+
     Color& operator [] (std::size_t i)
     {
         return m_colors[i];
