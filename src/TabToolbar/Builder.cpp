@@ -63,7 +63,10 @@ TabToolbar* Builder::CreateTabToolbar(const QString& configPath)
         menusMap.insert(menu->objectName(), menu);
 
     QFile configFile(configPath);
-    configFile.open(QIODevice::ReadOnly);
+    
+    const bool result = configFile.open(QIODevice::ReadOnly);
+    assert(result);
+
     const QJsonDocument config(QJsonDocument::fromJson(configFile.readAll()));
     const QJsonObject root = config.object();
     const int groupHeight = root["groupHeight"].toInt();
