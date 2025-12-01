@@ -42,6 +42,8 @@ TabToolbar::TabToolbar(QWidget* parent, unsigned _groupMaxHeight, unsigned _grou
     tempShowTimer.setSingleShot(true);
     tempShowTimer.setInterval(QApplication::doubleClickInterval());
 
+    this->setContextMenuPolicy(Qt::NoContextMenu);
+    toggleViewAction()->setEnabled(false);
     setProperty("TabToolbar", QVariant(true));
     layout()->setContentsMargins(0, 0, 0, 0);
     layout()->setSpacing(0);
